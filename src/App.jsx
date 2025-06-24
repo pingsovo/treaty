@@ -218,7 +218,7 @@ function App() {
           {people.length === 0 ? (
             <p className="text-gray-400 italic">กรุณาเพิ่มคนก่อนเพื่อกำหนดรายการสั่งซื้อส่วนตัว</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> {/* แก้ไขตรงนี้ */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6"> {/* แก้ไขตรงนี้ */}
               {people.map(p => (
                 <PersonOrderInput
                   key={p.id}
