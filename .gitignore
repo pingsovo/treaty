@@ -1,0 +1,96 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+.report/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Directory for output of 'npm pack'
+*.tgz
+
+# Core files
+*.core
+.vscode-test
+
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Build artifacts
+/dist
+/build # สำหรับ Create React App (ถ้าใช้)
+/out
+/es
+/lib
+/tmp
+
+# TypeScript
+*.tsbuildinfo
+
+# IDEs and Editors
+.idea
+.vscode # เฉพาะบางไฟล์ที่เกี่ยวข้องกับ user settings เช่น settings.json, launch.json, tasks.json. ส่วน extensions.json สามารถ commit ได้ถ้าเป็นของโปรเจกต์
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.c9
+.history
+.stackblitzrc
+
+# OS generated files
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging.local
+.env.*.local
+.env
+npm-debug.log
+yarn-debug.log
+
+# Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear on external devices
+.Spotlight-V100
+.Trashes
+.fseventsd
+
+# Linux
+*.swp
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Docker
+*.env
+.dockerignore # ไฟล์นี้ควรถูก commit แต่เราจะระบุไว้ที่นี่เพื่อความสมบูรณ์
+.env.development
+.env.production
+.env.local
+!docker-compose.yml # ถ้าคุณมี docker-compose.yml ที่อยากให้ commit
+!Dockerfile.dev # ถ้าคุณมี Dockerfile.dev ที่อยากให้ commit
+!Dockerfile # ถ้าคุณมี Dockerfile (production) ที่อยากให้ commit
+.docker-build-tmp/

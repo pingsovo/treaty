@@ -1,0 +1,20 @@
+# ใช้ Node.js สำหรับโหมดพัฒนา
+FROM node:20-alpine
+
+# กำหนด working directory
+WORKDIR /app
+
+# คัดลอก package.json และ package-lock.json
+# ทำขั้นตอนนี้ก่อนเพื่อใช้ประโยชน์จาก Docker cache
+COPY package*.json ./
+
+# ติดตั้ง dependencies
+RUN npm install
+
+# โค้ดที่เหลือจะถูก "mount" ผ่าน volume ใน docker-compose.yml
+# ดังนั้นจึงไม่จำเป็นต้อง COPY โค้ดทั้งหมดในขั้นตอนนี้สำหรับโหมดพัฒนา
+
+# รัน Development Server ของ React
+# (สำหรับ Create React App: npm start)
+# (สำหรับ Vite: npm run dev)
+CMD ["npm", "run", "dev"]

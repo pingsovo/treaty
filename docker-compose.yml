@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev # ชี้ไปที่ Dockerfile.dev
+    ports:
+      - "3000:3000" # แมปพอร์ตของ Development Server (ปกติคือ 3000)
+    volumes:
+      - .:/app # เชื่อมโยงไดเรกทอรีปัจจุบันของโฮสต์เข้ากับ /app ในคอนเทนเนอร์
+      - /app/node_modules # ป้องกันไม่ให้ node_modules ในคอนเทนเนอร์ถูกทับด้วยของโฮสต์
+    container_name: lunch-share-calculator-app-dev # ชื่อคอนเทนเนอร์สำหรับพัฒนา
+    restart: unless-stopped
