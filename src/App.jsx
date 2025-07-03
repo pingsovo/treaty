@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import * as htmlToImage from 'html-to-image';
 
 // ส่วนประกอบหลักของแอป
@@ -18,6 +18,9 @@ function App() {
   const [sharedItems, setSharedItems] = useState([]); // [{ id, name, price, sharers: [personId1, personId2] }]
   const [shippingCost, setShippingCost] = useState(0);
   const [discount, setDiscount] = useState(0);
+  const [serviceChargeEnabled, setServiceChargeEnabled] = useState(false);
+  const [serviceChargePercentage, setServiceChargePercentage] = useState(10); // Default 10%
+  const [vatEnabled, setVatEnabled] = useState(false);
 
   // สถานะสำหรับช่องกรอกชื่อคนใหม่
   const [newPersonName, setNewPersonName] = useState('');
@@ -124,6 +127,8 @@ function App() {
         subtotalBeforeProportion: 0, // รายการส่วนตัว + รายการที่แชร์
         proportionalShipping: 0,
         proportionalDiscount: 0,
+        proportionalServiceCharge: 0,
+        proportionalVat: 0,
         totalPay: 0,
       };
 
@@ -165,10 +170,23 @@ function App() {
       }
 
       // คำนวณยอดที่ต้องจ่ายสุดท้าย
+      let subtotalForTaxes = calculation[p.id].subtotalBeforeProportion;
+
+      if (serviceChargeEnabled) {
+        calculation[p.id].proportionalServiceCharge = subtotalForTaxes * (serviceChargePercentage / 100);
+        subtotalForTaxes += calculation[p.id].proportionalServiceCharge;
+      }
+
+      if (vatEnabled) {
+        calculation[p.id].proportionalVat = subtotalForTaxes * 0.07; // 7% VAT
+      }
+
       calculation[p.id].totalPay =
         calculation[p.id].subtotalBeforeProportion +
         calculation[p.id].proportionalShipping -
-        calculation[p.id].proportionalDiscount;
+        calculation[p.id].proportionalDiscount +
+        calculation[p.id].proportionalServiceCharge +
+        calculation[p.id].proportionalVat;
     });
 
     return calculation;
@@ -274,6 +292,48 @@ function App() {
                   onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
                 />
               </div>
+              <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="flex items-center justify-between bg-gray-700 p-3 rounded-xl border border-gray-600">
+                  <span className="text-gray-300 text-lg font-medium">มี Service Charge</span>
+                  <label htmlFor="serviceChargeToggle" className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="serviceChargeToggle"
+                      className="sr-only peer"
+                      checked={serviceChargeEnabled}
+                      onChange={() => setServiceChargeEnabled(!serviceChargeEnabled)}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-yellow-500"></div>
+                  </label>
+                </div>
+                {serviceChargeEnabled && (
+                  <div>
+                    <label htmlFor="serviceChargePercentage" className="block text-gray-300 text-lg font-medium mb-2">เปอร์เซ็นต์ Service Charge (%):</label>
+                    <input
+                      id="serviceChargePercentage"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="w-full p-3 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-600 shadow-sm transition-all duration-200 bg-gray-700 text-white placeholder-gray-400"
+                      value={serviceChargePercentage}
+                      onChange={(e) => setServiceChargePercentage(parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                )}
+                <div className="flex items-center justify-between bg-gray-700 p-3 rounded-xl border border-gray-600">
+                  <span className="text-gray-300 text-lg font-medium">มี VAT 7%</span>
+                  <label htmlFor="vatToggle" className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="vatToggle"
+                      className="sr-only peer"
+                      checked={vatEnabled}
+                      onChange={() => setVatEnabled(!vatEnabled)}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-yellow-500"></div>
+                  </label>
+                </div>
+              </div>
             </div>
           </SectionCard>
         </div>
@@ -335,6 +395,12 @@ function App() {
                       <li className="font-bold text-gray-200 border-t pt-2 mt-2 border-gray-700"><span className="font-semibold">ยอดรวมย่อย:</span> <span className="float-right">฿{result.subtotalBeforeProportion.toFixed(2)}</span></li>
                       <li className="text-red-400"><span className="font-semibold">ส่วนลดตามสัดส่วน:</span> <span className="float-right">- ฿{result.proportionalDiscount.toFixed(2)}</span></li>
                       <li className="text-green-400"><span className="font-semibold">ค่าส่งตามสัดส่วน:</span> <span className="float-right">+ ฿{result.proportionalShipping.toFixed(2)}</span></li>
+                      {serviceChargeEnabled && (
+                        <li className="text-yellow-400"><span className="font-semibold">Service Charge ({serviceChargePercentage}%):</span> <span className="float-right">+ ฿{result.proportionalServiceCharge.toFixed(2)}</span></li>
+                      )}
+                      {vatEnabled && (
+                        <li className="text-orange-400"><span className="font-semibold">VAT (7%):</span> <span className="float-right">+ ฿{result.proportionalVat.toFixed(2)}</span></li>
+                      )}
                     </ul>
                     <p className="mt-4 text-xl font-extrabold text-indigo-400 bg-indigo-900 p-3 rounded-lg flex justify-between items-center">
                       <span>ยอดที่ต้องชำระทั้งหมด:</span>
