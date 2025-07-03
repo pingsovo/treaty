@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import * as htmlToImage from 'html-to-image';
 
 // ส่วนประกอบหลักของแอป
 function App() {
@@ -20,6 +21,42 @@ function App() {
 
   // สถานะสำหรับช่องกรอกชื่อคนใหม่
   const [newPersonName, setNewPersonName] = useState('');
+  const summaryCardRef = useRef(null);
+
+  const handleDownloadImage = () => {
+    const element = summaryCardRef.current;
+    if (element) {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      const day = now.getDate().toString().padStart(2, '0');
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const fileName = `${year}${month}${day}${hours}${minutes}.png`;
+
+      const rect = element.getBoundingClientRect();
+
+      htmlToImage.toPng(element, {
+        backgroundColor: '#111827',
+        quality: 1.0,
+        pixelRatio: 2,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y,
+      })
+      .then(function (dataUrl) {
+        const link = document.createElement('a');
+        link.download = fileName;
+        link.href = dataUrl;
+        link.click();
+      })
+      .catch(function (error) {
+        console.error('oops, something went wrong!', error);
+        alert('Could not save the image. There was a rendering error.');
+      });
+    }
+  };
 
   // ฟังก์ชันสำหรับเพิ่มคนใหม่
   const addPerson = () => {
@@ -160,7 +197,157 @@ function App() {
           🍽️ แบ่งบิลค่าอาหารกลางวัน
         </h1>
 
-        {/* ส่วนเพิ่มคน */}
+        {/* Personal Orders Section */}
+        <SectionCard
+          title="รายการสั่งซื้อส่วนตัว"
+          icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 mr-3 text-blue-400" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6H8c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM9 16H7v-2h2v2zm0-4H7V8h2v4zm4 4h-2v-2h2v2zm0-4h-2V8h2v4zm4 4h-2v-2h2v2zm0-4h-2V8h2v4z"/></svg>}
+          description="ป้อนรายการที่แต่ละคนสั่งเอง"
+          bgColor="bg-gray-800"
+          borderColor="border-blue-800"
+        >
+          {people.length === 0 ? (
+            <p className="text-gray-400 italic">กรุณาเพิ่มคนก่อนเพื่อกำหนดรายการสั่งซื้อส่วนตัว</p>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {people.map(p => (
+                <PersonOrderInput
+                  key={p.id}
+                  person={p}
+                  addItem={addItemToPerson}
+                  removeItem={removeItemFromPerson}
+                />
+              ))}
+            </div>
+          )}
+        </SectionCard>
+
+        {/* Shared Items and Additional Costs Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <SectionCard
+            title="รายการที่แชร์"
+            icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 mr-3 text-green-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>}
+            description="เพิ่มรายการเช่น ของกินเล่นหรือเครื่องดื่มที่หลายคนแชร์กัน"
+            bgColor="bg-gray-800"
+            borderColor="border-green-800"
+          >
+            {people.length < 1 ? (
+              <p className="text-gray-400 italic">กรุณาเพิ่มคนอย่างน้อยหนึ่งคนเพื่อเพิ่มรายการที่แชร์</p>
+            ) : (
+              <SharedItemInput
+                people={people}
+                addSharedItem={addSharedItem}
+                sharedItems={sharedItems}
+                removeSharedItem={removeSharedItem}
+              />
+            )}
+          </SectionCard>
+
+          <SectionCard
+            title="ค่าใช้จ่ายเพิ่มเติม / ส่วนลด"
+            icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 mr-3 text-yellow-400" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm-1 14H5c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v4c0 .55-.45 1-1 1zM12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>}
+            description="ป้อนค่าส่งและส่วนลดโดยรวม"
+            bgColor="bg-gray-800"
+            borderColor="border-yellow-800"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="shipping" className="block text-gray-300 text-lg font-medium mb-2">ค่าส่ง (฿):</label>
+                <input
+                  id="shipping"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full p-3 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-600 shadow-sm transition-all duration-200 bg-gray-700 text-white placeholder-gray-400"
+                  value={shippingCost}
+                  onChange={(e) => setShippingCost(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label htmlFor="discount" className="block text-gray-300 text-lg font-medium mb-2">จำนวนส่วนลด (฿):</label>
+                <input
+                  id="discount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full p-3 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-600 shadow-sm transition-all duration-200 bg-gray-700 text-white placeholder-gray-400"
+                  value={discount}
+                  onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+          </SectionCard>
+        </div>
+
+        {/* Final Bill Summary Section */}
+        <SectionCard
+          title="สรุปบิลสุดท้าย"
+          icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 mr-3 text-indigo-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-6h-2v6zm0-8h2V7h-2v2z"/></svg>}
+          description="ดูว่าแต่ละคนต้องจ่ายเท่าไหร่หลังจากการคำนวณทั้งหมด"
+          bgColor="bg-gray-800"
+          borderColor="border-indigo-800"
+        >
+          {people.length === 0 ? (
+            <p className="text-gray-400 italic">เพิ่มคนและรายการสั่งซื้อเพื่อดูสรุป</p>
+          ) : (
+            <>
+              {/* Quick Summary Table */}
+              <div id="quickResult" className="mb-8 p-6 bg-gray-900 rounded-xl shadow-lg border border-gray-700 max-w-lg mx-auto">
+                <div ref={summaryCardRef} id="quickResult">
+                  <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-700">
+                    <h3 className="text-2xl font-bold text-white">ยอดรวมด่วน</h3>
+                    <button
+                      onClick={handleDownloadImage}
+                      className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 transform hover:scale-105 active:scale-95 flex items-center"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 9.293a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" />
+                      </svg>
+                      Save as Image
+                    </button>
+                  </div>
+                  <table className="w-full text-left text-gray-300">
+                    <thead className="border-b border-gray-700">
+                      <tr>
+                        <th className="py-3 px-4 font-semibold text-lg">ชื่อ</th>
+                        <th className="py-3 px-4 text-right font-semibold text-lg">ยอดที่ต้องชำระ (฿)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.values(calculatedResults).map((result, index) => (
+                      <tr key={result.name} className={`border-b border-gray-800 last:border-b-0 transition-colors ${index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-700'}`}>
+                          <td className="py-2 px-4">{result.name}</td>
+                          <td className="py-2 px-4 text-right font-semibold text-xl text-white">{result.totalPay.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Detailed Breakdown */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Object.values(calculatedResults).map(result => (
+                  <div key={result.name} className="p-5 bg-gray-900 rounded-xl shadow-md border border-indigo-900 transform hover:scale-[1.02] transition-transform duration-200 ease-in-out">
+                    <h3 className="text-2xl font-bold text-white mb-3 border-b pb-2 border-indigo-800">{result.name}</h3>
+                    <ul className="text-gray-300 text-base space-y-2 mb-3">
+                      <li><span className="font-semibold">รายการสั่งซื้อส่วนตัว:</span> <span className="float-right">฿{result.individualSubtotal.toFixed(2)}</span></li>
+                      <li><span className="font-semibold">รายการที่แชร์:</span> <span className="float-right">฿{result.sharedItemContribution.toFixed(2)}</span></li>
+                      <li className="font-bold text-gray-200 border-t pt-2 mt-2 border-gray-700"><span className="font-semibold">ยอดรวมย่อย:</span> <span className="float-right">฿{result.subtotalBeforeProportion.toFixed(2)}</span></li>
+                      <li className="text-red-400"><span className="font-semibold">ส่วนลดตามสัดส่วน:</span> <span className="float-right">- ฿{result.proportionalDiscount.toFixed(2)}</span></li>
+                      <li className="text-green-400"><span className="font-semibold">ค่าส่งตามสัดส่วน:</span> <span className="float-right">+ ฿{result.proportionalShipping.toFixed(2)}</span></li>
+                    </ul>
+                    <p className="mt-4 text-xl font-extrabold text-indigo-400 bg-indigo-900 p-3 rounded-lg flex justify-between items-center">
+                      <span>ยอดที่ต้องชำระทั้งหมด:</span>
+                      <span className="text-3xl">฿{result.totalPay.toFixed(2)}</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </SectionCard>
+
+        {/* Who's Eating Section */}
         <SectionCard
           title="ใครกินบ้าง?"
           icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 mr-3 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.88 6-3.88s5.97 1.89 6 3.88c-1.29 1.94-3.5 3.22-6 3.22z"/></svg>}
@@ -196,7 +383,6 @@ function App() {
                     className="ml-2 text-purple-300 hover:text-red-400 transition-colors duration-200"
                     aria-label={`ลบ ${p.name}`}
                   >
-                    {/* ไอคอนถังขยะ SVG */}
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd" />
                     </svg>
@@ -205,142 +391,6 @@ function App() {
               ))
             )}
           </div>
-        </SectionCard>
-
-        {/* ส่วนรายการสั่งซื้อส่วนตัว - ปรับเป็น 3 คอลัมน์สำหรับจอใหญ่ */}
-        <SectionCard
-          title="รายการสั่งซื้อส่วนตัว"
-          icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 mr-3 text-blue-400" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6H8c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM9 16H7v-2h2v2zm0-4H7V8h2v4zm4 4h-2v-2h2v2zm0-4h-2V8h2v4zm4 4h-2v-2h2v2zm0-4h-2V8h2v4z"/></svg>}
-          description="ป้อนรายการที่แต่ละคนสั่งเอง"
-          bgColor="bg-gray-800"
-          borderColor="border-blue-800"
-        >
-          {people.length === 0 ? (
-            <p className="text-gray-400 italic">กรุณาเพิ่มคนก่อนเพื่อกำหนดรายการสั่งซื้อส่วนตัว</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6"> {/* แก้ไขตรงนี้ */}
-              {people.map(p => (
-                <PersonOrderInput
-                  key={p.id}
-                  person={p}
-                  addItem={addItemToPerson}
-                  removeItem={removeItemFromPerson}
-                />
-              ))}
-            </div>
-          )}
-        </SectionCard>
-
-        {/* ส่วนรายการที่แชร์ */}
-        <SectionCard
-          title="รายการที่แชร์"
-          icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 mr-3 text-green-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>}
-          description="เพิ่มรายการเช่น ของกินเล่นหรือเครื่องดื่มที่หลายคนแชร์กัน เลือกว่าใครแชร์บ้าง"
-          bgColor="bg-gray-800"
-          borderColor="border-green-800"
-        >
-          {people.length < 1 ? (
-            <p className="text-gray-400 italic">กรุณาเพิ่มคนอย่างน้อยหนึ่งคนเพื่อเพิ่มรายการที่แชร์</p>
-          ) : (
-            <SharedItemInput
-              people={people}
-              addSharedItem={addSharedItem}
-              sharedItems={sharedItems}
-              removeSharedItem={removeSharedItem}
-            />
-          )}
-        </SectionCard>
-
-        {/* ส่วนค่าส่งและส่วนลด */}
-        <SectionCard
-          title="ค่าใช้จ่ายเพิ่มเติม / ส่วนลด"
-          icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 mr-3 text-yellow-400" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm-1 14H5c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v4c0 .55-.45 1-1 1zM12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>}
-          description="ป้อนค่าส่งทั้งหมดและส่วนลดโดยรวม จะถูกหารตามสัดส่วน"
-          bgColor="bg-gray-800"
-          borderColor="border-yellow-800"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="shipping" className="block text-gray-300 text-lg font-medium mb-2">ค่าส่ง (฿):</label>
-              <input
-                id="shipping"
-                type="number"
-                min="0"
-                step="0.01"
-                className="w-full p-3 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-600 shadow-sm transition-all duration-200 bg-gray-700 text-white placeholder-gray-400"
-                value={shippingCost}
-                onChange={(e) => setShippingCost(parseFloat(e.target.value) || 0)}
-              />
-            </div>
-            <div>
-              <label htmlFor="discount" className="block text-gray-300 text-lg font-medium mb-2">จำนวนส่วนลด (฿):</label>
-              <input
-                id="discount"
-                type="number"
-                min="0"
-                step="0.01"
-                className="w-full p-3 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-600 shadow-sm transition-all duration-200 bg-gray-700 text-white placeholder-gray-400"
-                value={discount}
-                onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-              />
-            </div>
-          </div>
-        </SectionCard>
-
-        {/* ส่วนสรุปการคำนวณ */}
-        <SectionCard
-          title="สรุปบิลสุดท้าย"
-          icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 mr-3 text-indigo-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-6h-2v6zm0-8h2V7h-2v2z"/></svg>}
-          description="ดูว่าแต่ละคนต้องจ่ายเท่าไหร่หลังจากการคำนวณทั้งหมด"
-          bgColor="bg-gray-800"
-          borderColor="border-indigo-800"
-        >
-          {people.length === 0 ? (
-            <p className="text-gray-400 italic">เพิ่มคนและรายการสั่งซื้อเพื่อดูสรุป</p>
-          ) : (
-            <>
-              {/* สรุปโดยละเอียด */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {Object.values(calculatedResults).map(result => (
-                  <div key={result.name} className="p-5 bg-gray-900 rounded-xl shadow-md border border-indigo-900 transform hover:scale-[1.02] transition-transform duration-200 ease-in-out">
-                    <h3 className="text-2xl font-bold text-white mb-3 border-b pb-2 border-indigo-800">{result.name}</h3>
-                    <ul className="text-gray-300 text-base space-y-2 mb-3">
-                      <li><span className="font-semibold">รายการสั่งซื้อส่วนตัว:</span> <span className="float-right">฿{result.individualSubtotal.toFixed(2)}</span></li>
-                      <li><span className="font-semibold">รายการที่แชร์:</span> <span className="float-right">฿{result.sharedItemContribution.toFixed(2)}</span></li>
-                      <li className="font-bold text-gray-200 border-t pt-2 mt-2 border-gray-700"><span className="font-semibold">ยอดรวมย่อย:</span> <span className="float-right">฿{result.subtotalBeforeProportion.toFixed(2)}</span></li>
-                      <li className="text-red-400"><span className="font-semibold">ส่วนลดตามสัดส่วน:</span> <span className="float-right">- ฿{result.proportionalDiscount.toFixed(2)}</span></li>
-                      <li className="text-green-400"><span className="font-semibold">ค่าส่งตามสัดส่วน:</span> <span className="float-right">+ ฿{result.proportionalShipping.toFixed(2)}</span></li>
-                    </ul>
-                    <p className="mt-4 text-xl font-extrabold text-indigo-400 bg-indigo-900 p-3 rounded-lg flex justify-between items-center">
-                      <span>ยอดที่ต้องชำระทั้งหมด:</span>
-                      <span className="text-3xl">฿{result.totalPay.toFixed(2)}</span>
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* ตารางสรุปย่อ */}
-              <div className="mt-8 p-6 bg-gray-900 rounded-xl shadow-lg border border-gray-700">
-                <h3 className="text-2xl font-bold text-white mb-4 border-b pb-2 border-gray-700">ยอดรวมด่วน</h3>
-                <table className="w-full text-left text-gray-300">
-                  <thead className="border-b border-gray-700">
-                    <tr>
-                      <th className="py-3 px-4 font-semibold text-lg">ชื่อ</th>
-                      <th className="py-3 px-4 text-right font-semibold text-lg">ยอดที่ต้องชำระ (฿)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.values(calculatedResults).map(result => (
-                      <tr key={result.name} className="border-b border-gray-800 last:border-b-0 hover:bg-gray-800 transition-colors">
-                        <td className="py-2 px-4">{result.name}</td>
-                        <td className="py-2 px-4 text-right font-semibold text-xl text-white">{result.totalPay.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
         </SectionCard>
       </div>
     </div>
