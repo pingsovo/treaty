@@ -7,6 +7,7 @@ import SharedItems from './components/SharedItems';
 import Costs from './components/Costs';
 import Summary from './components/Summary';
 import Settings from './components/Settings';
+import ShortSummaryCard from './components/ShortSummaryCard';
 
 // Main App Component
 function App() {
@@ -256,14 +257,19 @@ function App() {
           />
         </div>
 
+        <ShortSummaryCard
+          people={people}
+          calculatedResults={calculatedResults}
+          handleDownloadImage={handleDownloadImage}
+          summaryCardRef={summaryCardRef}
+        />
+
         <Summary
           people={people}
           calculatedResults={calculatedResults}
           serviceChargeEnabled={serviceChargeEnabled}
           serviceChargePercentage={serviceChargePercentage}
           vatEnabled={vatEnabled}
-          handleDownloadImage={handleDownloadImage}
-          summaryCardRef={summaryCardRef}
         />
 
         <People
