@@ -16,14 +16,14 @@ function Summary({ people, calculatedResults, serviceChargeEnabled, serviceCharg
       ) : (
         <>
           {/* Short Summary Card */}
-          <div className="mb-8 p-6 bg-gray-900 rounded-xl shadow-lg border border-gray-700">
+          <div ref={summaryCardRef} className="mb-8 p-6 bg-gray-900 rounded-xl shadow-lg border border-gray-700">
             <h3 className="text-2xl font-bold text-white mb-4 border-b pb-2 border-gray-700">สรุปสั้นๆ</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left Column: PromptPay Input */}
               <PromptPayInput totalAmount={Object.values(calculatedResults).reduce((sum, result) => sum + result.totalPay, 0)} />
 
               {/* Right Column: Quick Summary Table */}
-              <div ref={summaryCardRef} id="quickResult" className="p-5 bg-gray-900 rounded-xl shadow-lg border border-gray-700">
+              <div id="quickResult" className="p-5 bg-gray-900 rounded-xl shadow-lg border border-gray-700">
                 <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-700">
                   <h3 className="text-2xl font-bold text-white">ยอดรวมด่วน</h3>
                   <button
