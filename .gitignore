@@ -94,3 +94,4 @@ Desktop.ini
 !Dockerfile.dev # ถ้าคุณมี Dockerfile.dev ที่อยากให้ commit
 !Dockerfile # ถ้าคุณมี Dockerfile (production) ที่อยากให้ commit
 .docker-build-tmp/
+treaty.code-workspace
