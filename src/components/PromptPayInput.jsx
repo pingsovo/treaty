@@ -16,17 +16,59 @@ function PromptPayInput({ totalAmount }) {
     }
   }, []);
 
+  // Function to calculate CRC-16-CCITT
+  const crc16ccitt = (data) => {
+    const poly = 0x1021;
+    let crc = 0xFFFF;
+    for (let i = 0; i < data.length; i++) {
+      crc ^= (data.charCodeAt(i) << 8);
+      for (let j = 0; j < 8; j++) {
+        if ((crc & 0x8000) > 0) {
+          crc = ((crc << 1) ^ poly);
+        } else {
+          crc <<= 1;
+        }
+      }
+    }
+    return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+  };
+
   const generateQRCode = () => {
     if (promptPayId.trim() === '') {
       alert('Please enter a PromptPay ID.');
       return;
     }
-    // Format for PromptPay QR code (Thai QR Payment standard)
-    // Example: 00020101021230370016A000000677010111011300000000000005802TH53037645405100.006304A70B
-    // This is a simplified example. A real PromptPay QR would require more details.
-    // For simplicity, we'll just use the ID and amount.
-    const formattedAmount = totalAmount.toFixed(2);
-    const qrData = `00020101021229370016A0000006770101110113${promptPayId}5802TH530376454${formattedAmount}6304`;
+
+    // PromptPay QR Code Specification (simplified for this use case)
+    // Payload Format Indicator (ID 00) - "01"
+    // Point of Initiation Method (ID 01) - "11" (static QR)
+    // Merchant Information (ID 29-51)
+    //   - Merchant Information Template (ID 29)
+    //     - Globally Unique Identifier (ID 00) - "A000000677010111" (for PromptPay)
+    //     - Merchant ID (ID 01) - Mobile Number (13 digits, e.g., 0812345678) or Thai ID (13 digits)
+    // Currency Code (ID 53) - "764" (Thai Baht)
+    // Transaction Amount (ID 54) - totalAmount
+    // Country Code (ID 58) - "TH"
+    // CRC (ID 63) - Calculated CRC-16-CCITT
+
+    let merchantIdField = '';
+    if (promptPayId.length === 10 && promptPayId.startsWith('0')) { // Mobile number
+      merchantIdField = `01130000000${promptPayId.substring(1)}`; // Format for mobile
+    } else if (promptPayId.length === 13 && !isNaN(promptPayId)) { // Thai ID
+      merchantIdField = `0213${promptPayId}`; // Format for Thai ID
+    } else {
+      alert('Invalid PromptPay ID format. Please use a 10-digit mobile number (starting with 0) or a 13-digit Thai ID.');
+      return;
+    }
+
+    const amountField = totalAmount.toFixed(2);
+    const amountLength = amountField.length.toString().padStart(2, '0');
+
+    let qrDataWithoutCrc = `00020101021229370016A000000677010111${merchantIdField}530376454${amountLength}${amountField}5802TH`;
+
+    const crc = crc16ccitt(qrDataWithoutCrc + '6304'); // Append '6304' for CRC calculation
+    const qrData = `${qrDataWithoutCrc}6304${crc}`;
+
     setQrCodeValue(qrData);
     Cookies.set(PROMPTPAY_ID_COOKIE, promptPayId, { expires: 365 }); // Store for 1 year
   };
