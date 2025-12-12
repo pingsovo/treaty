@@ -13,48 +13,51 @@ function PersonOrderInput({ person, addItem, removeItem }) {
   };
 
   return (
-    <div className="mb-4 p-4 border border-blue-900 rounded-xl bg-gray-900 shadow-sm">
-      <h3 className="text-xl font-bold text-blue-300 mb-3">{person.name}</h3>
-      <div className="flex flex-col sm:flex-row gap-3 mb-3">
+    <div className="mb-3 p-3 border border-blue-900 rounded-xl bg-gray-900 shadow-sm relative">
+      {/* Remove Person Button (Top Right) - Optional UX improvement later, keeping clean for now */}
+      <h3 className="text-lg font-bold text-blue-300 mb-2 truncate">{person.name}</h3>
+      <div className="flex flex-col gap-2 mb-2">
         <input
           type="text"
-          className="flex-grow p-2 border border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-600 transition-all duration-200 bg-gray-800 text-white placeholder-gray-400"
-          placeholder="ชื่อรายการ (ไม่บังคับ)"
+          className="w-full p-2 text-sm border border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-600 bg-gray-800 text-white placeholder-gray-400"
+          placeholder="รายการ"
           value={itemName}
           onChange={(e) => setItemName(e.target.value)}
         />
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          className="w-full sm:w-28 p-2 border border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-600 transition-all duration-200 bg-gray-800 text-white placeholder-gray-400"
-          placeholder="ราคา (฿)"
-          value={itemPrice}
-          onChange={(e) => setItemPrice(e.target.value)}
-          onBlur={handleAddItem}
-          onKeyPress={(e) => { if (e.key === 'Enter') handleAddItem(); }}
-        />
-        <button
-          onClick={handleAddItem}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 shadow-md active:scale-95"
-        >
-          เพิ่มรายการ
-        </button>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            className="w-full p-2 text-sm border border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-600 bg-gray-800 text-white placeholder-gray-400"
+            placeholder="฿"
+            value={itemPrice}
+            onChange={(e) => setItemPrice(e.target.value)}
+            onBlur={handleAddItem}
+            onKeyPress={(e) => { if (e.key === 'Enter') handleAddItem(); }}
+          />
+          <button
+            onClick={handleAddItem}
+            className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition duration-300 shadow-md active:scale-95 whitespace-nowrap"
+          >
+            +
+          </button>
+        </div>
       </div>
       {person.items.length > 0 && (
-        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-gray-300 mt-4 border-t border-gray-700 pt-3">
+        <ul className="space-y-2 text-gray-300 mt-2 border-t border-gray-700 pt-2">
           {person.items.map(item => (
-            <li key={item.id} className="flex justify-between items-center bg-gray-800 px-3 py-2 rounded-md transition-all duration-200 hover:bg-gray-700">
-              <span className="font-medium">{item.name || 'รายการที่ไม่มีชื่อ'}</span> {/* แสดง 'รายการที่ไม่มีชื่อ' หากชื่อว่างเปล่า */}
-              <span className="flex items-center">
-                ฿{item.price.toFixed(2)}
+            <li key={item.id} className="flex justify-between items-center bg-gray-800/50 px-2 py-1.5 rounded text-sm">
+              <span className="truncate mr-2 max-w-[80px]">{item.name || '-'}</span>
+              <span className="flex items-center text-xs sm:text-sm">
+                ฿{item.price.toFixed(0)}
                 <button
                   onClick={() => removeItem(person.id, item.id)}
-                  className="ml-3 text-blue-400 hover:text-blue-200 transition-colors duration-200"
-                  aria-label={`ลบ ${item.name || 'รายการ'}`}
+                  className="ml-2 text-red-400 hover:text-red-300"
+                  aria-label="ลบ"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd" />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                 </button>
               </span>
@@ -78,7 +81,7 @@ function PersonalOrders({ people, addItemToPerson, removeItemFromPerson }) {
       {people.length === 0 ? (
         <p className="text-gray-400 italic">กรุณาเพิ่มคนก่อนเพื่อกำหนดรายการสั่งซื้อส่วนตัว</p>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           {people.map(p => (
             <PersonOrderInput
               key={p.id}

@@ -8,6 +8,7 @@ import Costs from './components/Costs';
 import Summary from './components/Summary';
 import Settings from './components/Settings';
 import ShortSummaryCard from './components/ShortSummaryCard';
+import HelpGuide from './components/HelpGuide';
 
 // Main App Component
 function App() {
@@ -30,7 +31,10 @@ function App() {
   const [serviceChargePercentage, setServiceChargePercentage] = useState(10); // Default 10%
   const [vatEnabled, setVatEnabled] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [roundUpEnabled, setRoundUpEnabled] = useState(false);
+  const [treatedPeopleIds, setTreatedPeopleIds] = useState([]);
+  const [treatSharingMode, setTreatSharingMode] = useState('active_only'); // 'active_only' | 'all'
 
   const summaryCardRef = useRef(null);
 
@@ -78,6 +82,8 @@ function App() {
       ...item,
       sharers: item.sharers.filter(sharerId => sharerId !== personId)
     })));
+    // Also remove from treated list if present
+    setTreatedPeopleIds(prevIds => prevIds.filter(id => id !== personId));
   };
 
   // Function to add an item to a person
@@ -115,7 +121,7 @@ function App() {
   };
 
   // --- Calculation Logic ---
-  const calculateTotals = () => {
+  const calculatedResults = React.useMemo(() => {
     const calculation = {};
     let totalOverallSubtotal = 0; // Total of all personal and shared items
 
@@ -188,38 +194,105 @@ function App() {
         calculation[p.id].proportionalDiscount +
         calculation[p.id].proportionalServiceCharge +
         calculation[p.id].proportionalVat;
-
-      if (roundUpEnabled) {
-        calculation[p.id].totalPay = Math.ceil(calculation[p.id].totalPay);
-      }
     });
 
-    return calculation;
-  };
+    // --- TREAT MODE LOGIC ---
+    // If there are treated people, distribute their costs to the non-treated people
+    const treatedPeopleIdsSet = new Set(treatedPeopleIds);
+    let payingPeopleIds = people.filter(p => !treatedPeopleIdsSet.has(p.id)).map(p => p.id);
 
-  const calculatedResults = calculateTotals();
+    // Initialize treat tracking
+    people.forEach(p => {
+      calculation[p.id].treatContribution = 0;
+      calculation[p.id].treatReceived = 0;
+    });
+
+    if (treatedPeopleIds.length > 0 && payingPeopleIds.length > 0) {
+      let totalTreatPool = 0;
+
+      // Collect debt from treated people
+      treatedPeopleIds.forEach(id => {
+        if (calculation[id]) {
+          const treatAmount = calculation[id].totalPay;
+          totalTreatPool += treatAmount;
+          calculation[id].treatReceived = treatAmount; // Record received amount
+          calculation[id].totalPay = 0; // Treated person pays nothing
+        }
+      });
+
+      // Distribute debt to paying people
+      // Filter paying people based on mode
+      if (treatSharingMode === 'active_only') {
+        payingPeopleIds = payingPeopleIds.filter(id => calculation[id] && calculation[id].totalPay > 0);
+      }
+
+      if (payingPeopleIds.length > 0) {
+        const perPayerShare = totalTreatPool / payingPeopleIds.length;
+        payingPeopleIds.forEach(id => {
+          if (calculation[id]) {
+            calculation[id].treatContribution = perPayerShare; // Record contribution
+            calculation[id].totalPay += perPayerShare;
+          }
+        });
+      } else if (treatedPeopleIds.length < people.length) {
+        // Edge case: Treated people exist, but no one else has > 0 cost to share it (in active_only mode)
+        // Fallback to "All non-treated"
+        const allRemainingIds = people.filter(p => !treatedPeopleIdsSet.has(p.id)).map(p => p.id);
+        if (allRemainingIds.length > 0) {
+          const fallbackShare = totalTreatPool / allRemainingIds.length;
+          allRemainingIds.forEach(id => {
+            if (calculation[id]) {
+              calculation[id].treatContribution = fallbackShare; // Record contribution
+              calculation[id].totalPay += fallbackShare;
+            }
+          });
+        }
+      }
+    }
+
+    // Apply Round Up LAST (after treat redistribution)
+    if (roundUpEnabled) {
+      people.forEach(p => {
+        calculation[p.id].totalPay = Math.ceil(calculation[p.id].totalPay);
+      });
+    }
+
+    return calculation;
+  }, [people, sharedItems, shippingCost, discount, serviceChargeEnabled, serviceChargePercentage, vatEnabled, roundUpEnabled, treatedPeopleIds, treatSharingMode]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center p-4 sm:p-6 font-inter text-gray-100 relative">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center p-2 sm:p-6 font-inter text-gray-100 relative">
       {/* Floating Settings Button */}
-      <button
-        onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-        className="fixed bottom-6 right-6 bg-gray-700 p-4 rounded-full shadow-lg text-white hover:bg-gray-600 transition-all duration-300 z-50 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-500"
-        aria-label="Settings"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.09-.74-1.71-.98l-.37-2.65C14.06 2.18 13.64 2 13.12 2h-2.24c-.52 0-.94.18-1.01.64l-.37 2.65c-.62.24-1.19.58-1.71.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.04.32-.07.64-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.09.74 1.71.98l.37 2.65c.07.46.49.64 1.01.64h2.24c.52 0 .94-.18 1.01-.64l.37-2.65c.62-.24 1.19-.58 1.71-.98l2.49 1c.22.09.49 0 .61-.22l2-3.46c-.12-.22-.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
-        </svg>
-      </button>
+      <div className="fixed bottom-6 right-6 z-50 flex gap-4">
+        <button
+          onClick={() => setIsHelpOpen(true)}
+          className="bg-blue-600 p-3 sm:p-4 rounded-full shadow-lg text-white hover:bg-blue-500 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          aria-label="Help"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-8 sm:w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+        <button
+          onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+          className="bg-gray-700 p-3 sm:p-4 rounded-full shadow-lg text-white hover:bg-gray-600 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          aria-label="Settings"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-8 sm:w-8" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.09-.74-1.71-.98l-.37-2.65C14.06 2.18 13.64 2 13.12 2h-2.24c-.52 0-.94.18-1.01.64l-.37 2.65c-.62.24-1.19.58-1.71.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l-2.11 1.65c-.04.32-.07.64-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.09.74 1.71.98l.37 2.65c.07.46.49.64 1.01.64h2.24c.52 0 .94-.18 1.01-.64l.37-2.65c.62-.24 1.19-.58 1.71-.98l2.49 1c.22.09.49 0 .61-.22l2-3.46c-.12-.22-.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
+          </svg>
+        </button>
+      </div>
       <Settings
         isSettingsOpen={isSettingsOpen}
         setIsSettingsOpen={setIsSettingsOpen}
         roundUpEnabled={roundUpEnabled}
         setRoundUpEnabled={setRoundUpEnabled}
       />
+      <HelpGuide isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
       {/* Make the main container more fluid */}
-      <div className="bg-gray-900 p-6 sm:p-10 lg:p-12 rounded-3xl shadow-2xl w-full max-w-full md:max-w-6xl xl:max-w-screen-xl border border-gray-700 mx-auto">
-        <h1 className="text-5xl sm:text-6xl font-extrabold text-center text-white mb-10 tracking-tight leading-tight">
+      <div className="bg-gray-900 p-4 sm:p-10 lg:p-12 rounded-3xl shadow-2xl w-full max-w-full md:max-w-6xl xl:max-w-screen-xl border border-gray-700 mx-auto">
+        <h1 className="text-3xl sm:text-6xl font-extrabold text-center text-white mb-6 sm:mb-10 tracking-tight leading-tight">
           🍽️ แบ่งบิลค่าอาหารกลางวัน
         </h1>
 
@@ -248,6 +321,11 @@ function App() {
             setServiceChargePercentage={setServiceChargePercentage}
             vatEnabled={vatEnabled}
             setVatEnabled={setVatEnabled}
+            people={people}
+            treatedPeopleIds={treatedPeopleIds}
+            setTreatedPeopleIds={setTreatedPeopleIds}
+            treatSharingMode={treatSharingMode}
+            setTreatSharingMode={setTreatSharingMode}
           />
         </div>
 

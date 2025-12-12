@@ -31,6 +31,12 @@ function Summary({ people, calculatedResults, serviceChargeEnabled, serviceCharg
                   {vatEnabled && (
                     <li className="text-orange-400"><span className="font-semibold">VAT (7%):</span> <span className="float-right">+ ฿{result.proportionalVat.toFixed(2)}</span></li>
                   )}
+                  {result.treatContribution > 0 && (
+                    <li className="text-yellow-500 font-bold bg-yellow-900/30 p-1 rounded"><span className="font-semibold">เลี้ยงเพื่อนไป:</span> <span className="float-right">+ ฿{result.treatContribution.toFixed(2)}</span></li>
+                  )}
+                  {result.treatReceived > 0 && (
+                    <li className="text-purple-400 font-bold bg-purple-900/30 p-1 rounded"><span className="font-semibold">ได้รับเลี้ยง (ฟรี!):</span> <span className="float-right">฿{result.treatReceived.toFixed(2)}</span></li>
+                  )}
                 </ul>
                 <p className="mt-4 text-xl font-extrabold text-indigo-400 bg-indigo-900 p-3 rounded-lg flex justify-between items-center">
                   <span>ยอดที่ต้องชำระทั้งหมด:</span>

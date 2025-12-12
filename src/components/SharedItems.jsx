@@ -40,7 +40,6 @@ function SharedItemInput({ people, addSharedItem, sharedItems, removeSharedItem 
           placeholder="ราคา (฿)"
           value={itemPrice}
           onChange={(e) => setItemPrice(e.target.value)}
-          onBlur={handleAddSharedItem}
           onKeyPress={(e) => { if (e.key === 'Enter') handleAddSharedItem(); }}
         />
       </div>

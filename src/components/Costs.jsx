@@ -2,7 +2,7 @@
 import React from 'react';
 import SectionCard from './SectionCard';
 
-function Costs({ shippingCost, setShippingCost, discount, setDiscount, serviceChargeEnabled, setServiceChargeEnabled, serviceChargePercentage, setServiceChargePercentage, vatEnabled, setVatEnabled }) {
+function Costs({ shippingCost, setShippingCost, discount, setDiscount, serviceChargeEnabled, setServiceChargeEnabled, serviceChargePercentage, setServiceChargePercentage, vatEnabled, setVatEnabled, people, treatedPeopleIds, setTreatedPeopleIds, treatSharingMode, setTreatSharingMode }) {
   return (
     <SectionCard
       title="ค่าใช้จ่ายเพิ่มเติม / ส่วนลด"
@@ -78,6 +78,77 @@ function Costs({ shippingCost, setShippingCost, discount, setDiscount, serviceCh
             </label>
           </div>
         </div>
+
+        {/* Treat Mode Section */}
+        {people && people.length > 0 && (
+          <div className="col-span-full mt-6 border-t border-gray-700 pt-6">
+            <h3 className="text-xl font-bold text-yellow-300 mb-4 flex items-center">
+              <span className="mr-2">🎁</span> คนเลี้ยง / คนที่ไม่ต้องจ่าย (Treat Mode)
+            </h3>
+            <p className="text-gray-400 text-sm mb-4">
+              เลือกคนที่ <strong>ไม่ต้องจ่ายเงิน</strong> (ทุกคนที่เหลือจะหารยอดนี้เพิ่มเท่าๆ กัน)
+            </p>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {people.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    const isTreated = treatedPeopleIds.includes(p.id);
+                    if (isTreated) {
+                      setTreatedPeopleIds(treatedPeopleIds.filter(id => id !== p.id));
+                    } else {
+                      // Prevent selecting everyone (someone must pay!)
+                      if (treatedPeopleIds.length === people.length - 1) {
+                        alert('ต้องมีคนจ่ายอย่างน้อย 1 คนครับ!');
+                        return;
+                      }
+                      setTreatedPeopleIds([...treatedPeopleIds, p.id]);
+                    }
+                  }}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 shadow-md transform hover:scale-105 active:scale-95
+                    ${treatedPeopleIds.includes(p.id) ? 'bg-yellow-600 text-white border-2 border-yellow-400' : 'bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600'}`}
+                >
+                  {p.name} {treatedPeopleIds.includes(p.id) && '🎉'}
+                </button>
+              ))}
+            </div>
+
+            {/* Sharing Mode Toggle - Only show if there are treated people */}
+            {treatedPeopleIds.length > 0 && (
+              <div className="bg-gray-700 p-4 rounded-xl border border-gray-600 animate-fade-in-up">
+                <p className="text-gray-300 text-sm font-medium mb-3">รูปแบบการหารยอดของคนเลี้ยง:</p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <label className="flex items-center cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="treatSharingMode"
+                      value="active_only"
+                      checked={treatSharingMode === 'active_only'}
+                      onChange={() => setTreatSharingMode('active_only')}
+                      className="w-5 h-5 text-yellow-500 bg-gray-600 border-gray-500 focus:ring-yellow-500 focus:ring-2"
+                    />
+                    <span className="ml-2 text-gray-200 group-hover:text-white transition-colors">
+                      หารเฉพาะคนที่มียอด <span className="text-xs text-gray-400 block sm:inline">(Active Only)</span>
+                    </span>
+                  </label>
+                  <label className="flex items-center cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="treatSharingMode"
+                      value="all"
+                      checked={treatSharingMode === 'all'}
+                      onChange={() => setTreatSharingMode('all')}
+                      className="w-5 h-5 text-yellow-500 bg-gray-600 border-gray-500 focus:ring-yellow-500 focus:ring-2"
+                    />
+                    <span className="ml-2 text-gray-200 group-hover:text-white transition-colors">
+                      หารทุกคนที่เหลือ <span className="text-xs text-gray-400 block sm:inline">(All Remaining)</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </SectionCard>
   );

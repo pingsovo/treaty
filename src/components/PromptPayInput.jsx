@@ -47,7 +47,8 @@ function PromptPayInput({ totalAmount }) {
     //     - Globally Unique Identifier (ID 00) - "A000000677010111" (for PromptPay)
     //     - Merchant ID (ID 01) - Mobile Number (13 digits, e.g., 0812345678) or Thai ID (13 digits)
     // Currency Code (ID 53) - "764" (Thai Baht)
-    // Transaction Amount (ID 54) - totalAmount
+    // Currency Code (ID 53) - "764" (Thai Baht)
+    // Transaction Amount (ID 54) - REMOVED to allow manual input
     // Country Code (ID 58) - "TH"
     // CRC (ID 63) - Calculated CRC-16-CCITT
 
@@ -61,10 +62,12 @@ function PromptPayInput({ totalAmount }) {
       return;
     }
 
-    const amountField = totalAmount.toFixed(2);
-    const amountLength = amountField.length.toString().padStart(2, '0');
+    // Amount is now OMITTED (ID 54) to allow manual input in banking app
+    // const amountField = totalAmount.toFixed(2);
+    // const amountLength = amountField.length.toString().padStart(2, '0');
+    // Old with amount: ...530376454${amountLength}${amountField}5802TH...
 
-    let qrDataWithoutCrc = `00020101021229370016A000000677010111${merchantIdField}530376454${amountLength}${amountField}5802TH`;
+    let qrDataWithoutCrc = `00020101021229370016A000000677010111${merchantIdField}53037645802TH`;
 
     const crc = crc16ccitt(qrDataWithoutCrc + '6304'); // Append '6304' for CRC calculation
     const qrData = `${qrDataWithoutCrc}6304${crc}`;
