@@ -45,16 +45,10 @@ function App() {
       const minutes = now.getMinutes().toString().padStart(2, '0');
       const fileName = `${year}${month}${day}${hours}${minutes}.png`;
 
-      const rect = element.getBoundingClientRect();
-
       htmlToImage.toPng(element, {
         backgroundColor: '#111827',
         quality: 1.0,
         pixelRatio: 2,
-        width: rect.width,
-        height: rect.height,
-        x: rect.x,
-        y: rect.y,
       })
         .then(function (dataUrl) {
           const link = document.createElement('a');

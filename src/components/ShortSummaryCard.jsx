@@ -6,6 +6,7 @@ import PromptPayInput from './PromptPayInput';
 function ShortSummaryCard({ people, calculatedResults, handleDownloadImage, summaryCardRef }) {
   return (
     <SectionCard
+      ref={summaryCardRef}
       title="สรุปสั้นๆ"
       icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 mr-3 text-indigo-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-6h-2v6zm0-8h2V7h-2v2z" /></svg>}
       description="สรุปยอดที่ต้องชำระและสร้าง QR Code PromptPay"
@@ -20,7 +21,7 @@ function ShortSummaryCard({ people, calculatedResults, handleDownloadImage, summ
           <PromptPayInput totalAmount={Object.values(calculatedResults).reduce((sum, result) => sum + result.totalPay, 0)} />
 
           {/* Right Column: Quick Summary Table */}
-          <div ref={summaryCardRef} id="quickResult" className="p-5 bg-gray-900 rounded-xl shadow-lg border border-gray-700">
+          <div id="quickResult" className="p-5 bg-gray-900 rounded-xl shadow-lg border border-gray-700">
             <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-700">
               <h3 className="text-2xl font-bold text-white">ยอดรวมด่วน</h3>
               <button

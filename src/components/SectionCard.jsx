@@ -1,9 +1,9 @@
 
-import React from 'react';
+import React, { forwardRef } from 'react';
 
-function SectionCard({ title, icon, description, children, bgColor, borderColor, textColor }) {
+const SectionCard = forwardRef(({ title, icon, description, children, bgColor, borderColor, textColor }, ref) => {
   return (
-    <section className={`mb-8 p-6 ${bgColor} rounded-2xl shadow-lg border ${borderColor}`}>
+    <section ref={ref} className={`mb-8 p-6 ${bgColor} rounded-2xl shadow-lg border ${borderColor}`}>
       <h2 className={`text-3xl font-extrabold ${textColor || 'text-gray-100'} mb-3 flex items-center`}>
         {icon}
         {title}
@@ -12,6 +12,6 @@ function SectionCard({ title, icon, description, children, bgColor, borderColor,
       {children}
     </section>
   );
-}
+});
 
 export default SectionCard;
