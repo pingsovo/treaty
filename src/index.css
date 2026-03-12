@@ -1,1 +1,41 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --font-thai: 'Sukhumvit Set', 'Sarabun', 'Noto Sans Thai', 'Helvetica Neue', Arial, sans-serif;
+    
+    /* iOS Dark Mode Color Palette */
+    --ios-bg: #000000;
+    --ios-card: #1C1C1E; /* Secondary System Background */
+    --ios-card-elevated: #2C2C2E; /* Tertiary System Background */
+    --ios-blue: #0A84FF;
+    --ios-green: #30D158;
+    --ios-orange: #FF9F0A;
+    --ios-red: #FF453A;
+    --ios-gray: #8E8E93;
+    --ios-gray-light: #3A3A3C;
+    --ios-separator: rgba(84, 84, 88, 0.65);
+    --ios-text: rgba(255, 255, 255, 0.85); /* Slightly muted white */
+  }
+
+  body {
+    font-family: var(--font-thai);
+    background-color: var(--ios-bg);
+    color: var(--ios-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Tailwind font-inter override for this app */
+  .font-inter {
+    font-family: var(--font-thai);
+    letter-spacing: -0.01em; /* Apple HIG tightness */
+  }
+}
+
+/* iOS Segmented Control animation classes */
+.segment-active {
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}

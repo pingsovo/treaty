@@ -5,43 +5,52 @@ function Summary({ people, calculatedResults, serviceChargeEnabled, serviceCharg
   return (
     <SectionCard
       title="สรุปบิลสุดท้าย"
-      icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 mr-3 text-indigo-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-6h-2v6zm0-8h2V7h-2v2z" /></svg>}
-      description="ดูว่าแต่ละคนต้องจ่ายเท่าไหร่หลังจากการคำนวณทั้งหมด"
-      bgColor="bg-gray-800"
-      borderColor="border-indigo-800"
+      icon={<svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-[#8E8E93]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-6h-2v6zm0-8h2V7h-2v2z" /></svg>}
     >
       {people.length === 0 ? (
-        <p className="text-gray-400 italic">เพิ่มคนและรายการสั่งซื้อเพื่อดูสรุป</p>
+        <p className="text-[#8E8E93] text-[15px] italic">เพิ่มคนและรายการสั่งซื้อเพื่อดูสรุป</p>
       ) : (
         <>
           {/* Detailed Breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.values(calculatedResults).map(result => (
-              <div key={result.name} className="p-5 bg-gray-900 rounded-xl shadow-md border border-indigo-900 transform hover:scale-[1.02] transition-transform duration-200 ease-in-out">
-                <h3 className="text-2xl font-bold text-white mb-3 border-b pb-2 border-indigo-800">{result.name}</h3>
-                <ul className="text-gray-300 text-base space-y-2 mb-3">
-                  <li><span className="font-semibold">รายการสั่งซื้อส่วนตัว:</span> <span className="float-right">฿{result.individualSubtotal.toFixed(2)}</span></li>
-                  <li><span className="font-semibold">รายการที่แชร์:</span> <span className="float-right">฿{result.sharedItemContribution.toFixed(2)}</span></li>
-                  <li className="font-bold text-gray-200 border-t pt-2 mt-2 border-gray-700"><span className="font-semibold">ยอดรวมย่อย:</span> <span className="float-right">฿{result.subtotalBeforeProportion.toFixed(2)}</span></li>
-                  <li className="text-red-400"><span className="font-semibold">ส่วนลดตามสัดส่วน:</span> <span className="float-right">- ฿{result.proportionalDiscount.toFixed(2)}</span></li>
-                  <li className="text-green-400"><span className="font-semibold">ค่าส่งตามสัดส่วน:</span> <span className="float-right">+ ฿{result.proportionalShipping.toFixed(2)}</span></li>
+              <div key={result.name} className="p-5 bg-[#2C2C2E] rounded-2xl shadow-sm relative overflow-hidden transition-transform">
+                <h3 className="text-[20px] font-bold text-white mb-4 border-b border-[#3A3A3C] pb-3 tracking-wide">{result.name}</h3>
+                <ul className="text-[#EBEBF5] text-[14px] space-y-2.5 mb-5 font-medium">
+                  <li className="flex justify-between"><span className="text-[#8E8E93]">รายการสั่งซื้อส่วนตัว:</span> <span>฿{result.individualSubtotal.toFixed(2)}</span></li>
+                  <li className="flex justify-between"><span className="text-[#8E8E93]">รายการที่แชร์:</span> <span>฿{result.sharedItemContribution.toFixed(2)}</span></li>
+                  
+                  <li className="flex justify-between font-bold text-white border-t pt-3 mt-3 border-[#3A3A3C]">
+                    <span className="text-[#8E8E93]">ยอดรวมย่อย:</span> <span>฿{result.subtotalBeforeProportion.toFixed(2)}</span>
+                  </li>
+                  
+                  {result.proportionalDiscount > 0 && (
+                    <li className="flex justify-between text-white"><span>ส่วนลดตามสัดส่วน:</span> <span>- ฿{result.proportionalDiscount.toFixed(2)}</span></li>
+                  )}
+                  {result.proportionalShipping > 0 && (
+                    <li className="flex justify-between text-white"><span>ค่าส่งตามสัดส่วน:</span> <span>+ ฿{result.proportionalShipping.toFixed(2)}</span></li>
+                  )}
                   {serviceChargeEnabled && (
-                    <li className="text-yellow-400"><span className="font-semibold">Service Charge ({serviceChargePercentage}%):</span> <span className="float-right">+ ฿{result.proportionalServiceCharge.toFixed(2)}</span></li>
+                    <li className="flex justify-between text-white"><span>Service Charge ({serviceChargePercentage}%):</span> <span>+ ฿{result.proportionalServiceCharge.toFixed(2)}</span></li>
                   )}
                   {vatEnabled && (
-                    <li className="text-orange-400"><span className="font-semibold">VAT (7%):</span> <span className="float-right">+ ฿{result.proportionalVat.toFixed(2)}</span></li>
+                    <li className="flex justify-between text-white"><span>VAT (7%):</span> <span>+ ฿{result.proportionalVat.toFixed(2)}</span></li>
                   )}
                   {result.treatContribution > 0 && (
-                    <li className="text-yellow-500 font-bold bg-yellow-900/30 p-1 rounded"><span className="font-semibold">เลี้ยงเพื่อนไป:</span> <span className="float-right">+ ฿{result.treatContribution.toFixed(2)}</span></li>
+                    <li className="flex justify-between items-center text-white font-bold bg-[#3A3A3C] p-2 rounded-lg mt-2">
+                      <span>เลี้ยงเพื่อนไป:</span> <span>+ ฿{result.treatContribution.toFixed(2)}</span>
+                    </li>
                   )}
                   {result.treatReceived > 0 && (
-                    <li className="text-purple-400 font-bold bg-purple-900/30 p-1 rounded"><span className="font-semibold">ได้รับเลี้ยง (ฟรี!):</span> <span className="float-right">฿{result.treatReceived.toFixed(2)}</span></li>
+                    <li className="flex justify-between items-center text-white font-bold border border-[#3A3A3C] p-2 rounded-lg mt-2">
+                      <span>ได้รับเลี้ยง (ฟรี!):</span> <span>฿{result.treatReceived.toFixed(2)}</span>
+                    </li>
                   )}
                 </ul>
-                <p className="mt-4 text-xl font-extrabold text-indigo-400 bg-indigo-900 p-3 rounded-lg flex justify-between items-center">
-                  <span>ยอดที่ต้องชำระทั้งหมด:</span>
-                  <span className="text-3xl">฿{result.totalPay.toFixed(2)}</span>
-                </p>
+                <div className="mt-4 pt-4 border-t border-[#3A3A3C] flex justify-between items-end">
+                  <span className="text-[14px] text-[#8E8E93] font-medium mb-1">ยอดชำระสุทธิ</span>
+                  <span className="text-[28px] font-bold text-white">฿{result.totalPay.toFixed(2)}</span>
+                </div>
               </div>
             ))}
           </div>

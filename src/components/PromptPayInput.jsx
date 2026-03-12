@@ -13,101 +13,121 @@ function PromptPayInput({ totalAmount }) {
     const savedId = Cookies.get(PROMPTPAY_ID_COOKIE);
     if (savedId) {
       setPromptPayId(savedId);
+      // Auto-generate QR if we have a saved ID
     }
   }, []);
 
-  // Function to calculate CRC-16-CCITT
-  const crc16ccitt = (data) => {
-    const poly = 0x1021;
+  // CRC-16/CCITT-FALSE
+  const crc16 = (data) => {
     let crc = 0xFFFF;
     for (let i = 0; i < data.length; i++) {
       crc ^= (data.charCodeAt(i) << 8);
       for (let j = 0; j < 8; j++) {
-        if ((crc & 0x8000) > 0) {
-          crc = ((crc << 1) ^ poly);
-        } else {
-          crc <<= 1;
-        }
+        crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
       }
     }
     return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
   };
 
-  const generateQRCode = () => {
-    if (promptPayId.trim() === '') {
-      alert('Please enter a PromptPay ID.');
-      return;
-    }
-
-    // PromptPay QR Code Specification (simplified for this use case)
-    // Payload Format Indicator (ID 00) - "01"
-    // Point of Initiation Method (ID 01) - "11" (static QR)
-    // Merchant Information (ID 29-51)
-    //   - Merchant Information Template (ID 29)
-    //     - Globally Unique Identifier (ID 00) - "A000000677010111" (for PromptPay)
-    //     - Merchant ID (ID 01) - Mobile Number (13 digits, e.g., 0812345678) or Thai ID (13 digits)
-    // Currency Code (ID 53) - "764" (Thai Baht)
-    // Currency Code (ID 53) - "764" (Thai Baht)
-    // Transaction Amount (ID 54) - REMOVED to allow manual input
-    // Country Code (ID 58) - "TH"
-    // CRC (ID 63) - Calculated CRC-16-CCITT
-
-    let merchantIdField = '';
-    if (promptPayId.length === 10 && promptPayId.startsWith('0')) { // Mobile number
-      merchantIdField = `01130000000${promptPayId.substring(1)}`; // Format for mobile
-    } else if (promptPayId.length === 13 && !isNaN(promptPayId)) { // Thai ID
-      merchantIdField = `0213${promptPayId}`; // Format for Thai ID
-    } else {
-      alert('Invalid PromptPay ID format. Please use a 10-digit mobile number (starting with 0) or a 13-digit Thai ID.');
-      return;
-    }
-
-    // Amount is now OMITTED (ID 54) to allow manual input in banking app
-    // const amountField = totalAmount.toFixed(2);
-    // const amountLength = amountField.length.toString().padStart(2, '0');
-    // Old with amount: ...530376454${amountLength}${amountField}5802TH...
-
-    let qrDataWithoutCrc = `00020101021229370016A000000677010111${merchantIdField}53037645802TH`;
-
-    const crc = crc16ccitt(qrDataWithoutCrc + '6304'); // Append '6304' for CRC calculation
-    const qrData = `${qrDataWithoutCrc}6304${crc}`;
-
-    setQrCodeValue(qrData);
-    Cookies.set(PROMPTPAY_ID_COOKIE, promptPayId, { expires: 365 }); // Store for 1 year
+  // Build a TLV (Tag-Length-Value) field
+  const field = (id, value) => {
+    const len = value.length.toString().padStart(2, '0');
+    return `${id}${len}${value}`;
   };
 
+  const generateQRCode = () => {
+    const raw = promptPayId.replace(/[-\s]/g, '');
+
+    if (raw === '') {
+      alert('กรุณากรอก PromptPay ID');
+      return;
+    }
+
+    let accountField;
+    if (raw.length === 10 && /^\d+$/.test(raw)) {
+      // Mobile number: prefix country code, strip leading 0 → 66XXXXXXXXX
+      const normalized = '0066' + raw.slice(1);
+      accountField = field('01', normalized);
+    } else if (raw.length === 13 && /^\d+$/.test(raw)) {
+      // Thai national ID / Tax ID
+      accountField = field('02', raw);
+    } else {
+      alert('PromptPay ID ไม่ถูกต้อง\nกรุณาใช้เบอร์มือถือ 10 หลัก หรือเลขบัตรประชาชน 13 หลัก');
+      return;
+    }
+
+    // Merchant account info template (ID 29)
+    const guid = field('00', 'A000000677010111');
+    const merchantAccount = field('29', guid + accountField);
+
+    // Build payload without CRC
+    const payload =
+      field('00', '01') +          // Payload Format Indicator
+      field('01', '11') +          // Point of Initiation: static
+      merchantAccount +            // Merchant Account (ID 29)
+      field('53', '764') +         // Currency: THB
+      field('58', 'TH') +          // Country
+      field('63', '0000');         // Placeholder for CRC (4 zeros)
+
+    // Replace placeholder CRC with real one
+    const realCrc = crc16(payload.slice(0, -4)); // Calc over everything except last 4 chars ('0000')
+    const finalPayload = payload.slice(0, -4) + realCrc;
+
+    setQrCodeValue(finalPayload);
+    Cookies.set(PROMPTPAY_ID_COOKIE, promptPayId, { expires: 365 });
+  };
+
+  // Auto-regenerate QR when totalAmount changes (if QR was already shown)
+  useEffect(() => {
+    if (qrCodeValue && promptPayId) {
+      generateQRCode();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalAmount]);
+
   return (
-    <div className="p-5 bg-gray-900 rounded-xl shadow-md border border-indigo-900">
-      <h3 className="text-2xl font-bold text-white mb-3 border-b pb-2 border-indigo-800">PromptPay QR Code</h3>
-      <div className="mb-4">
-        <label htmlFor="promptPayId" className="block text-gray-300 text-lg font-medium mb-2">PromptPay ID (Mobile/Thai ID):</label>
+    <div className="p-5 bg-gradient-to-b from-[#0A84FF] to-[#0055B3] rounded-[24px] shadow-lg w-full relative overflow-hidden">
+      {/* Decorative top cutout for wallet pass look */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80px] h-[12px] bg-black rounded-b-[10px]"></div>
+
+      <h3 className="text-[18px] font-bold text-white mb-4 text-center mt-2 tracking-wide font-medium">PromptPay QR</h3>
+      <div className="mb-4 flex flex-col sm:flex-row gap-3">
         <input
           id="promptPayId"
           type="text"
-          className="w-full p-3 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-600 shadow-sm transition-all duration-200 bg-gray-700 text-white placeholder-gray-400"
-          placeholder="e.g., 0812345678 or 1-2345-67890-12-3"
+          inputMode="numeric"
+          className="flex-1 p-3 bg-white/20 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-white placeholder-white/70 text-[15px] transition-all"
+          placeholder="เบอร์มือถือ / เลขบัตร ปชช."
           value={promptPayId}
           onChange={(e) => setPromptPayId(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && generateQRCode()}
         />
+        <button
+          onClick={generateQRCode}
+          className="px-5 py-3 bg-white text-[#0A84FF] font-bold rounded-xl shadow-sm active:scale-[0.96] transition-transform text-[15px] whitespace-nowrap"
+        >
+          สร้าง QR
+        </button>
       </div>
-      <button
-        onClick={generateQRCode}
-        className="w-full px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 transform hover:scale-105 active:scale-95"
-      >
-        Generate QR Code
-      </button>
 
       {qrCodeValue && (
-        <div className="mt-6 flex flex-col items-center">
-          <p className="text-gray-300 text-lg mb-2">Scan to Pay ฿{totalAmount.toFixed(2)}</p>
-          <div className="p-4 bg-white rounded-lg shadow-lg">
+        <div className="mt-6 flex flex-col items-center bg-white rounded-[20px] p-6 pb-5 shadow-inner relative">
+          {/* Top dashed line for "ticket" effect */}
+          <div className="absolute top-0 left-5 right-5 h-[1px] border-t-2 border-dashed border-gray-200"></div>
+          {/* Half circles on sides for ticket effect */}
+          <div className="absolute -top-3 left-0 w-6 h-6 bg-[#0055B3] rounded-full -translate-x-1/2"></div>
+          <div className="absolute -top-3 right-0 w-6 h-6 bg-[#0055B3] rounded-full translate-x-1/2"></div>
+          
+          <div className="bg-white p-2 rounded-xl mb-3">
             <QRCodeSVG
               value={qrCodeValue}
-              size={256}
-              level="H"
+              size={180}
+              level="M"
               includeMargin={false}
             />
           </div>
+          <p className="text-gray-800 font-bold text-[22px]">฿{totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="text-gray-500 text-[13px] mt-0.5 text-center font-medium">แสกนเพื่อชำระเงินผ่านแอปธนาคาร</p>
         </div>
       )}
     </div>
