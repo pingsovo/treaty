@@ -77,6 +77,7 @@ function calculateSession(session, roundUpEnabled) {
       totalPay: 0,
       treatContribution: 0,
       treatReceived: 0,
+      refundDeduction: 0,
     };
     p.items.forEach((item) => { calculation[p.id].individualSubtotal += item.price; });
   });
@@ -90,17 +91,37 @@ function calculateSession(session, roundUpEnabled) {
     }
   });
 
+  // Calculate refunds per person
+  let totalLeftoverRefund = 0;
+  refunds.forEach((refund) => {
+    if (calculation[refund.personId]) {
+      calculation[refund.personId].refundDeduction += refund.amount;
+    }
+  });
+
   people.forEach((p) => {
-    calculation[p.id].subtotalBeforeProportion =
-      calculation[p.id].individualSubtotal + calculation[p.id].sharedItemContribution;
+    const grossSubtotal = calculation[p.id].individualSubtotal + calculation[p.id].sharedItemContribution;
+    const deduction = calculation[p.id].refundDeduction || 0;
+    const netSubtotal = grossSubtotal - deduction;
+    
+    // If refund is larger than subtotal, the remainder acts as an additional discount for the group
+    if (netSubtotal < 0) {
+      calculation[p.id].subtotalBeforeProportion = 0;
+      totalLeftoverRefund += Math.abs(netSubtotal);
+    } else {
+      calculation[p.id].subtotalBeforeProportion = netSubtotal;
+    }
+    
     totalOverallSubtotal += calculation[p.id].subtotalBeforeProportion;
   });
+
+  const effectiveDiscount = discount + totalLeftoverRefund;
 
   people.forEach((p) => {
     if (totalOverallSubtotal > 0) {
       const proportion = calculation[p.id].subtotalBeforeProportion / totalOverallSubtotal;
       calculation[p.id].proportionalShipping = shippingCost * proportion;
-      calculation[p.id].proportionalDiscount = discount * proportion;
+      calculation[p.id].proportionalDiscount = effectiveDiscount * proportion;
     }
     let subtotalForTaxes = calculation[p.id].subtotalBeforeProportion;
     if (serviceChargeEnabled) {
@@ -145,30 +166,7 @@ function calculateSession(session, roundUpEnabled) {
     }
   }
 
-  // ---- Refunds: deduct proportionally from all payers ----
-  if (refunds.length > 0) {
-    // Total pay among non-treated people (payers pool)
-    const payerIds = people.filter((p) => !new Set(treatedPeopleIds).has(p.id)).map((p) => p.id);
-    const payerTotal = payerIds.reduce((sum, id) => sum + (calculation[id]?.totalPay || 0), 0);
-
-    refunds.forEach((refund) => {
-      const rawAmount = refund.amount;
-      // For 'app' mode, we assume the refund covers service/vat portion too; use as-is.
-      // For 'direct', use exact amount.
-      const deductAmount = rawAmount;
-
-      if (payerTotal > 0) {
-        payerIds.forEach((id) => {
-          if (calculation[id]) {
-            const proportion = (calculation[id].totalPay / payerTotal);
-            calculation[id].totalPay -= deductAmount * proportion;
-            if (!calculation[id].refundDeduction) calculation[id].refundDeduction = 0;
-            calculation[id].refundDeduction += deductAmount * proportion;
-          }
-        });
-      }
-    });
-  }
+  // Removed obsolete global proportional refund deduction logic
 
   people.forEach((p) => { if (calculation[p.id].totalPay < 0) calculation[p.id].totalPay = 0; });
 
