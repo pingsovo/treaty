@@ -59,14 +59,27 @@ function HelpGuide({ isOpen, onClose }) {
                         </ol>
                     </section>
 
-                    {/* Scenario 4: Payment */}
+                    {/* Scenario 4: Refunds */}
+                    <section>
+                        <h3 className="text-[18px] font-bold text-[#FF453A] mb-3 flex items-center">
+                            4. การคืนเงิน / สั่งผิด
+                        </h3>
+                        <p className="text-[14px] text-[#8E8E93] mb-3">เมื่อรายการอาหารมาผิด หรือต้องทำการคืนเงินบางส่วน</p>
+                        <ol className="list-decimal list-outside space-y-2 ml-5 text-[#8E8E93]">
+                            <li><span className="text-[#EBEBF5]">เปิดส่วน <strong>"ส่วนการตั้งค่า"</strong> แล้วเปิดการแสดงผล <strong>"คืนเงิน/ส่งผิด"</strong></span></li>
+                            <li><span className="text-[#EBEBF5]">ระบุชื่อคนที่สั่งผิด และกรอกจำนวนเงินที่ได้คืน</span></li>
+                            <li><span className="text-[#EBEBF5]">ระบบจะนำเงินคืนไป <strong>หักลบออกจากยอดของคนคนนั้นโดยตรง</strong> ก่อนนำไปคำนวณส่วนลดหรือค่าส่ง (เพื่อรักษาความยุติธรรมให้ทุกคนในกลุ่ม)</span></li>
+                        </ol>
+                    </section>
+
+                    {/* Scenario 5: Payment */}
                     <section>
                         <h3 className="text-[18px] font-bold text-[#BF5AF2] mb-3 flex items-center">
-                            4. การจ่ายเงินและดูสรุป
+                            5. การจ่ายเงินและดูสรุป
                         </h3>
                         <ol className="list-decimal list-outside space-y-2 ml-5 text-[#8E8E93]">
-                            <li><span className="text-[#EBEBF5]">ตรวจสอบยอดรวมได้ที่ส่วน <strong>"สรุปบิลสุดท้าย"</strong> และ <strong>"PromptPay QR"</strong></span></li>
-                            <li><span className="text-[#EBEBF5]">ใส่เบอร์ PromptPay ของคนรับเงิน เพื่อสร้าง QR Code (ไม่ต้องใส่ยอดเงิน ผู้โอนต้องระบุเอง)</span></li>
+                            <li><span className="text-[#EBEBF5]">สามารถตั้งค่าสลับการดู <strong>"สรุปยอดจ่ายจริง"</strong> (ใบเสร็จ) และ <strong>"สรุปบิลสุดท้าย"</strong> (แบบละเอียด) ได้ที่เมนูตั้งค่า</span></li>
+                            <li><span className="text-[#EBEBF5]">ใส่เบอร์ PromptPay ของคนรับเงิน เพื่อสร้าง QR Code ไว้แสกนจ่ายได้อย่างรวดเร็ว</span></li>
                             <li><span className="text-[#EBEBF5]">กดปุ่ม <strong>"Save"</strong> บนตาราง หรือโหลด <strong>"PDF"</strong> ใบเสร็จเพื่อส่งในแชทกลุ่มได้เลย</span></li>
                         </ol>
                     </section>
