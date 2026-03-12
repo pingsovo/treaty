@@ -195,7 +195,6 @@ function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [roundUpEnabled, setRoundUpEnabled] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  
   // ---- Typography Scale ----
   const [baseFontSize, setBaseFontSize] = useState(
     Number(Cookies.get('treaty_font_size')) || 16
@@ -205,6 +204,17 @@ function App() {
     Cookies.set('treaty_font_size', baseFontSize, COOKIE_OPTS);
     document.documentElement.style.fontSize = `${baseFontSize}px`;
   }, [baseFontSize]);
+
+  // ---- Component Visibility Toggles ----
+  const [showSharedItems, setShowSharedItems] = useState(Cookies.get('treaty_show_shared') === 'true');
+  const [showRefunds, setShowRefunds] = useState(Cookies.get('treaty_show_refunds') === 'true');
+  const [showShortSummary, setShowShortSummary] = useState(Cookies.get('treaty_show_short_summary') !== 'false');
+  const [showFinalSummary, setShowFinalSummary] = useState(Cookies.get('treaty_show_final_summary') === 'true');
+
+  useEffect(() => { Cookies.set('treaty_show_shared', showSharedItems, COOKIE_OPTS); }, [showSharedItems]);
+  useEffect(() => { Cookies.set('treaty_show_refunds', showRefunds, COOKIE_OPTS); }, [showRefunds]);
+  useEffect(() => { Cookies.set('treaty_show_short_summary', showShortSummary, COOKIE_OPTS); }, [showShortSummary]);
+  useEffect(() => { Cookies.set('treaty_show_final_summary', showFinalSummary, COOKIE_OPTS); }, [showFinalSummary]);
 
   // ---- History ----
   const loadHistory = () => {
@@ -429,6 +439,14 @@ function App() {
         setRoundUpEnabled={setRoundUpEnabled} 
         baseFontSize={baseFontSize}
         setBaseFontSize={setBaseFontSize}
+        showSharedItems={showSharedItems}
+        setShowSharedItems={setShowSharedItems}
+        showRefunds={showRefunds}
+        setShowRefunds={setShowRefunds}
+        showShortSummary={showShortSummary}
+        setShowShortSummary={setShowShortSummary}
+        showFinalSummary={showFinalSummary}
+        setShowFinalSummary={setShowFinalSummary}
       />
       <HelpGuide isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
       <HistoryPanel
@@ -499,13 +517,15 @@ function App() {
           removeItemFromPerson={removeItemFromPerson}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-4">
-          <SharedItems
-            people={activeSession.people}
-            addSharedItem={addSharedItem}
-            sharedItems={activeSession.sharedItems}
-            removeSharedItem={removeSharedItem}
-          />
+        <div className={`grid grid-cols-1 ${showSharedItems ? 'lg:grid-cols-2' : ''} gap-8 mt-4`}>
+          {showSharedItems && (
+            <SharedItems
+              people={activeSession.people}
+              addSharedItem={addSharedItem}
+              sharedItems={activeSession.sharedItems}
+              removeSharedItem={removeSharedItem}
+            />
+          )}
           <Costs
             shippingCost={activeSession.shippingCost}
             setShippingCost={setShippingCost}
@@ -526,33 +546,41 @@ function App() {
         </div>
 
         {/* Refunds / Wrong Orders */}
-        <div className="mt-4">
-          <Refunds
-            refunds={activeSession.refunds || []}
+        {showRefunds && (
+          <div className="mt-4">
+            <Refunds
+              refunds={activeSession.refunds || []}
+              people={activeSession.people}
+              onAdd={addRefund}
+              onRemove={removeRefund}
+            />
+          </div>
+        )}
+
+        {showShortSummary && (
+          <ShortSummaryCard
             people={activeSession.people}
-            onAdd={addRefund}
-            onRemove={removeRefund}
+            calculatedResults={calculatedResults}
+            handleDownloadImage={handleDownloadImage}
+            summaryCardRef={summaryCardRef}
           />
-        </div>
+        )}
 
-        <ShortSummaryCard
-          people={activeSession.people}
-          calculatedResults={calculatedResults}
-          handleDownloadImage={handleDownloadImage}
-          summaryCardRef={summaryCardRef}
-        />
+        {showFinalSummary && (
+          <>
+            <Summary
+              people={activeSession.people}
+              calculatedResults={calculatedResults}
+              serviceChargeEnabled={activeSession.serviceChargeEnabled}
+              serviceChargePercentage={activeSession.serviceChargePercentage}
+              vatEnabled={activeSession.vatEnabled}
+            />
 
-        <Summary
-          people={activeSession.people}
-          calculatedResults={calculatedResults}
-          serviceChargeEnabled={activeSession.serviceChargeEnabled}
-          serviceChargePercentage={activeSession.serviceChargePercentage}
-          vatEnabled={activeSession.vatEnabled}
-        />
-
-        {/* Multi-Session merged summary */}
-        {sessions.length > 1 && (
-          <MultiSessionSummary sessionResults={allSessionResults} />
+            {/* Multi-Session merged summary */}
+            {sessions.length > 1 && (
+              <MultiSessionSummary sessionResults={allSessionResults} />
+            )}
+          </>
         )}
 
         <People
